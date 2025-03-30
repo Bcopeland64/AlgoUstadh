@@ -1,4 +1,4 @@
-# Contributing to AlgoMentor
+# Contributing to AlgoUstadh
 
 Thank you for your interest in contributing to AlgoMentor! This document provides guidelines and instructions for contributing to the project. By participating, you agree to abide by our code of conduct.
 
