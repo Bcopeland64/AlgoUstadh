@@ -1,6 +1,6 @@
 # Contributing to AlgoUstadh
 
-Thank you for your interest in contributing to AlgoMentor! This document provides guidelines and instructions for contributing to the project. By participating, you agree to abide by our code of conduct.
+Thank you for your interest in contributing to AlgoUstadh! This document provides guidelines and instructions for contributing to the project. By participating, you agree to abide by our code of conduct.
 
 ## Table of Contents
 
@@ -14,7 +14,7 @@ Thank you for your interest in contributing to AlgoMentor! This document provide
 
 ## Ways to Contribute
 
-There are several ways you can contribute to AlgoMentor:
+There are several ways you can contribute to AlgoUstadh:
 
 - **Code Contributions**: Add new features, fix bugs, or improve performance
 - **Content Contributions**: Add new topics, problems, or explanations
@@ -29,8 +29,8 @@ To set up the project for local development:
 
 1. **Fork and clone the repository**
    ```bash
-   git clone https://github.com/yourusername/algomentor.git
-   cd algomentor
+   git clone https://github.com/yourusername/algoustadh.git
+   cd algoustadh
    ```
 
 2. **Create a virtual environment**
