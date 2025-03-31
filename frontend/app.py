@@ -8,6 +8,8 @@ import numpy as np
 import pandas as pd
 import io
 import base64
+import datetime
+import time
 from pygments import highlight
 from pygments.lexers import PythonLexer
 from pygments.formatters import HtmlFormatter
@@ -15,6 +17,15 @@ from streamlit_extras.colored_header import colored_header
 from streamlit_extras.switch_page_button import switch_page
 from streamlit_extras.add_vertical_space import add_vertical_space
 from streamlit_extras.grid import grid
+
+# Add current directory to path so imports work
+import sys
+sys.path.append("/home/brandon/Documents/brandon/GenAI Bootcamp/AlgoUstadh")
+
+# Import custom components
+from frontend.components.visualizations import get_visualization
+from frontend.components.progress_tracker import ProgressTracker
+from frontend.components.community import CommunityForums
 
 # Setup API URL (change when deploying)
 API_URL = "http://localhost:5000/api"
@@ -36,6 +47,8 @@ if "current_problem" not in st.session_state:
     st.session_state.current_problem = None
 if "current_category" not in st.session_state:
     st.session_state.current_category = "dsa"  # Default category
+if "current_view" not in st.session_state:
+    st.session_state.current_view = None
 if "code_solution" not in st.session_state:
     st.session_state.code_solution = ""
 if "design_solution" not in st.session_state:
@@ -46,6 +59,10 @@ if "evaluation_result" not in st.session_state:
     st.session_state.evaluation_result = None
 if "hint_level" not in st.session_state:
     st.session_state.hint_level = 0
+
+# Initialize progress tracker and community forums
+progress_tracker = ProgressTracker(st.session_state.user_id)
+community_forums = CommunityForums(st.session_state.user_id)
 
 # Custom CSS
 st.markdown("""
@@ -442,12 +459,25 @@ def render_sidebar():
     
     col1, col2 = st.sidebar.columns(2)
     if col1.button("📊 My Progress", use_container_width=True):
-        # TODO: Implement progress tracking view
-        st.sidebar.info("Progress tracking coming soon!")
+        st.session_state.current_view = "progress"
+        st.session_state.current_topic = None
+        st.session_state.current_problem = None
     
     if col2.button("📝 My Notes", use_container_width=True):
-        # TODO: Implement notes view
-        st.sidebar.info("Notes feature coming soon!")
+        st.session_state.current_view = "notes"
+        st.session_state.current_topic = None
+        st.session_state.current_problem = None
+    
+    col1, col2 = st.sidebar.columns(2)
+    if col1.button("🎯 Learning Path", use_container_width=True):
+        st.session_state.current_view = "learning_path"
+        st.session_state.current_topic = None
+        st.session_state.current_problem = None
+    
+    if col2.button("💬 Community", use_container_width=True):
+        st.session_state.current_view = "community"
+        st.session_state.current_topic = None
+        st.session_state.current_problem = None
     
     # User profile
     st.sidebar.markdown("---")
@@ -847,39 +877,10 @@ def render_dsa_topic_page(topic):
         st.markdown('<div class="concept-header">Interactive Visualization</div>', unsafe_allow_html=True)
         st.markdown("Visualizations help you understand how data structures and algorithms work in practice.")
         
-        # Based on topic, show appropriate visualizations
-        if topic["id"] == "arrays":
-            st.markdown("### Array Operations")
-            
-            # Sample array visualization
-            array_size = st.slider("Array Size", 5, 20, 10)
-            array_values = []
-            cols = st.columns(array_size)
-            
-            for i in range(array_size):
-                with cols[i]:
-                    array_values.append(st.number_input(f"", value=i+1, key=f"array_{i}", label_visibility="collapsed"))
-            
-            st.markdown("### Array Operations")
-            op_col1, op_col2, op_col3 = st.columns(3)
-            
-            with op_col1:
-                if st.button("Insert Element"):
-                    st.session_state.array_operation = "insert"
-            
-            with op_col2:
-                if st.button("Delete Element"):
-                    st.session_state.array_operation = "delete"
-            
-            with op_col3:
-                if st.button("Search Element"):
-                    st.session_state.array_operation = "search"
-            
-            # Animation placeholder
-            st.markdown("### Visualization")
-            st.info("Interactive visualizations for arrays will be available soon!")
-            
-        elif topic["id"] == "linked_lists":
+        # Get visualization for the current topic
+        visualization = get_visualization(topic["id"], st.session_state.current_category)
+        
+        if topic["id"] == "linked_lists":
             st.markdown("### Linked List Operations")
             
             # Linked list visualization with nodes and arrows
@@ -964,6 +965,58 @@ def render_dsa_topic_page(topic):
                 if st.button("Reverse List"):
                     st.info("Animation for reversing the list would be shown here")
             
+        elif visualization is not None:
+            # If we have a visualization for this topic, display it
+            if isinstance(visualization, go.Figure):
+                st.plotly_chart(visualization, use_container_width=True)
+            elif isinstance(visualization, str) and visualization.startswith("data:image"):
+                # For static images like matplotlib output
+                st.markdown(f"<img src='{visualization}' style='width:100%;'>", unsafe_allow_html=True)
+            else:
+                st.error("Visualization error")
+            
+            # Add interactive features based on topic type
+            if topic["id"] in ["arrays", "stacks", "queues"]:
+                st.markdown("### Operations")
+                op_col1, op_col2, op_col3 = st.columns(3)
+                
+                with op_col1:
+                    if st.button("Insert Element"):
+                        st.info("Animation for insertion would be shown here")
+                
+                with op_col2:
+                    if st.button("Delete Element"):
+                        st.info("Animation for deletion would be shown here")
+                
+                with op_col3:
+                    if st.button("Search Element"):
+                        st.info("Animation for searching would be shown here")
+            
+            elif topic["id"] in ["sorting", "searching"]:
+                st.markdown("### Algorithm Selection")
+                algorithm = st.selectbox(
+                    "Choose Algorithm",
+                    ["Bubble Sort", "Selection Sort", "Insertion Sort", "Merge Sort", "Quick Sort"] if topic["id"] == "sorting" else ["Linear Search", "Binary Search", "Jump Search"]
+                )
+                
+                if st.button("Run Animation"):
+                    st.info(f"Animation for {algorithm} would be shown here")
+                    
+            elif topic["id"] in ["trees", "binary_search_trees", "heaps"]:
+                st.markdown("### Tree Operations")
+                op_col1, op_col2, op_col3 = st.columns(3)
+                
+                with op_col1:
+                    if st.button("Insert Node"):
+                        st.info("Animation for node insertion would be shown here")
+                
+                with op_col2:
+                    if st.button("Delete Node"):
+                        st.info("Animation for node deletion would be shown here")
+                
+                with op_col3:
+                    if st.button("Search Node"):
+                        st.info("Animation for node search would be shown here")
         else:
             # Generic placeholder for other topics
             st.info("Interactive visualizations for this topic will be available soon!")
@@ -1547,16 +1600,101 @@ def render_math_topic_page(topic):
             # Generic placeholder for other topics
             st.info("Interactive tools for this topic will be available soon!")
 
+# Render progress dashboard
+def render_progress_dashboard():
+    """Render the progress tracking dashboard"""
+    progress_tracker.render_progress_dashboard()
+
+# Render learning path
+def render_learning_path():
+    """Render personalized learning path"""
+    progress_tracker.render_learning_path()
+
+# Render community forums
+def render_community_forums():
+    """Render community forums"""
+    community_forums.render_forums()
+
+# Render notes feature
+def render_notes():
+    """Render user notes feature"""
+    st.markdown("## My Notes")
+    
+    # Initialize notes in session state if it doesn't exist
+    if 'user_notes' not in st.session_state:
+        st.session_state.user_notes = {}
+    
+    # Get categories
+    categories = {
+        "dsa": "Data Structures & Algorithms",
+        "system_design": "System Design",
+        "math": "Mathematics",
+        "general": "General Notes"
+    }
+    
+    # Notes tabs
+    tabs = st.tabs(list(categories.values()))
+    
+    for i, (category_id, category_name) in enumerate(categories.items()):
+        with tabs[i]:
+            # Initialize category notes if needed
+            if category_id not in st.session_state.user_notes:
+                st.session_state.user_notes[category_id] = []
+            
+            # Display existing notes
+            for j, note in enumerate(st.session_state.user_notes[category_id]):
+                with st.expander(f"Note {j+1}: {note['title']}", expanded=False):
+                    st.markdown(note['content'])
+                    st.text(f"Created: {note['timestamp']}")
+                    
+                    # Delete button
+                    if st.button("Delete Note", key=f"delete_{category_id}_{j}"):
+                        st.session_state.user_notes[category_id].pop(j)
+                        st.rerun()
+            
+            # Add new note
+            st.markdown("### Add New Note")
+            note_title = st.text_input("Title", key=f"title_{category_id}")
+            note_content = st.text_area("Content", key=f"content_{category_id}", height=200)
+            
+            if st.button("Save Note", key=f"save_{category_id}"):
+                if note_title and note_content:
+                    # Add the note
+                    st.session_state.user_notes[category_id].append({
+                        'title': note_title,
+                        'content': note_content,
+                        'timestamp': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    })
+                    
+                    # Clear inputs
+                    st.session_state[f"title_{category_id}"] = ""
+                    st.session_state[f"content_{category_id}"] = ""
+                    
+                    st.success("Note saved successfully!")
+                    time.sleep(1)
+                    st.rerun()
+                else:
+                    st.warning("Please fill in both title and content.")
+
 # Main app logic
 def main():
     # Render the sidebar
     render_sidebar()
     
-    # Determine what to render in the main area
-    if st.session_state.current_topic is None:
-        # Show landing page
-        render_landing_page()
-    else:
+    # Determine what to render in the main area based on current view
+    if st.session_state.current_view == "progress":
+        # Show progress dashboard
+        render_progress_dashboard()
+    elif st.session_state.current_view == "learning_path":
+        # Show learning path
+        render_learning_path()
+    elif st.session_state.current_view == "community":
+        # Show community forums
+        render_community_forums()
+    elif st.session_state.current_view == "notes":
+        # Show notes feature
+        render_notes()
+    elif st.session_state.current_topic is not None:
         # Show topic page based on category
         if st.session_state.current_category == "dsa":
             render_dsa_topic_page(st.session_state.current_topic)
@@ -1564,6 +1702,9 @@ def main():
             render_system_design_topic_page(st.session_state.current_topic)
         elif st.session_state.current_category == "math":
             render_math_topic_page(st.session_state.current_topic)
+    else:
+        # Show landing page
+        render_landing_page()
 
 if __name__ == "__main__":
     main()
