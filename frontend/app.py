@@ -20,7 +20,7 @@ from streamlit_extras.grid import grid
 
 # Add current directory to path so imports work
 import sys
-sys.path.append("/home/brandon/Documents/brandon/GenAI Bootcamp/AlgoUstadh")
+sys.path.append("/workspace/AlgoUstadh")
 
 # Import custom components
 from frontend.components.visualizations import get_visualization

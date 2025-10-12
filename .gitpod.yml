@@ -1,0 +1,5 @@
+tasks:
+  - init: |
+      pip install -r requirements.txt
+      python init_db.py
+    command: python main.py
